@@ -80,7 +80,13 @@ int main(int argi, char* argv[]) {
 
       location_handler_type location_handler(nodeLocatorStore);
 
-      S2Splitter s2Splitter(14);
+      int s2Level = args::get(s2LevelArg);
+
+      S2Splitter s2Splitter(s2Level);
+
+      if(args::get(outputDirArg).size() > 0) {
+        s2Splitter.setOutputDirectory(args::get(outputDirArg));
+      }
 
       osmium::io::Reader reader{args::get(inputFileArg), osmium::osm_entity_bits::node | osmium::osm_entity_bits::way};
 
