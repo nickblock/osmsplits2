@@ -32,21 +32,23 @@ void S2Splitter::way(osmium::Way& way)
   //create a list of s2cells which the nodes in this way occupy
   for(auto& node : nodeList) {
 
-    auto node_loc = node.location();
-
-    auto s2Cell = S2Cell(S2LatLng::FromDegrees(node_loc.lat(), node_loc.lon()));
-
-    cellsCovered.insert(s2Cell.id().parent(mS2Level).id());
+    cellsCovered.insert(
+      S2Cell(S2LatLng::FromDegrees( // s2cell based on lat lon coords of node
+        node.location().lat(), //node's lat lon coords
+        node.location().lon()
+      )) 
+      .id().parent(mS2Level).id() // s2cell's id of parent at given level
+    );
   }
 
-  //for each s2cell covered add any nodes not yet added to it and then the way to it's file
+  //for each s2cell covered by the way, add any nodes not yet added to it's file and then the way as well
   for(auto cellId : cellsCovered) {
 
     SetOfNodeIds& nodeIdSet = getSetOfNodesForS2Cell(cellId);
 
     for(auto& node : nodeList) {
-      if(nodeIdSet.find(node.ref()) == nodeIdSet.end()) {
-        
+      if(nodeIdSet.find(node.ref()) == nodeIdSet.end()) { // if the node is not already in the set we want to write it to the s2's file
+
       }
     }
   }
