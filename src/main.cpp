@@ -33,6 +33,9 @@
 // For osmium::apply()
 #include <osmium/visitor.hpp>
 
+#include <osmium/index/node_locations_map.hpp>
+#include <osmium/handler/node_locations_for_ways.hpp>
+#include <osmium/index/map/sparse_mem_array.hpp>
 #include <osmium/index/map/flex_mem.hpp>
 #include <osmium/handler/node_locations_for_ways.hpp>
 
@@ -42,29 +45,12 @@ using std::string;
 using std::cout;
 using std::endl;
 
-class NamesHandler : public osmium::handler::Handler {
-
-    void output_pubs(const osmium::OSMObject& object) {
-      // cout << object.id() << endl;
-    }
-
-public:
-
-    // Nodes can be tagged amenity=pub.
-    void node(const osmium::Node& node) {
-        output_pubs(node);
-    }
-
-    // Ways can be tagged amenity=pub, too (typically buildings).
-    void way(const osmium::Way& way) {
-        output_pubs(way);
-    }
-
-}; // class NamesHandler
+using NodeLocatorMap = osmium::index::map::SparseMemArray<osmium::unsigned_object_id_type, osmium::Location>;
+using location_handler_type = osmium::handler::NodeLocationsForWays<NodeLocatorMap>;
 
 int main(int argi, char* argv[]) {
 
-  args::ArgumentParser          parser("osmsplits2. Take a single large osm file and split it into files defined by s2 cells", 
+  args::ArgumentParser  parser("osmsplits2. Take a single large osm file and split it into files defined by s2 cells", 
     "You must at least specify one input osm/som.pbf file, an output directory, and the s2 level to split dowm to");
 
   args::ValueFlag<string>  inputFileArg(parser, "*.osm|*.pbf", "Specify input .osm file", {'i'});
@@ -92,13 +78,13 @@ int main(int argi, char* argv[]) {
 
       NodeLocatorMap nodeLocatorStore;
 
-      // Construct the handler defined above
-      S2Splitter s2Splitter(nodeLocatorStore, 14);
+      location_handler_type location_handler(nodeLocatorStore);
+
+      S2Splitter s2Splitter(14);
 
       osmium::io::Reader reader{args::get(inputFileArg), osmium::osm_entity_bits::node | osmium::osm_entity_bits::way};
 
-      // Apply input data to our own handler
-      osmium::apply(reader, s2Splitter);
+      osmium::apply(reader, location_handler, s2Splitter);
 
       cout << "done" << endl;
 

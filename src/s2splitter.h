@@ -1,20 +1,30 @@
 
 #pragma once
 
-#include <osmium/index/node_locations_map.hpp>
-#include <osmium/handler/node_locations_for_ways.hpp>
-#include <osmium/index/map/sparse_mem_array.hpp>
+#include <osmium/handler.hpp>
+#include <osmium/osm/node.hpp>
+#include <osmium/osm/way.hpp>
+#include <unordered_set>
+#include <unordered_map>
+#include <stdint.h>
 
-using NodeLocatorMap = osmium::index::map::SparseMemArray<osmium::unsigned_object_id_type, osmium::Location>;
-using location_handler_type = osmium::handler::NodeLocationsForWays<NodeLocatorMap>;
 
-class S2Splitter : public location_handler_type {
+class S2Splitter : public osmium::handler::Handler {
+
 public:
-  S2Splitter(NodeLocatorMap& store, int s2level);
+  
+  S2Splitter(int s2level);
 
-  void node(const osmium::Node& node);
   void way(osmium::Way& way);
 
+private:
 
+  using SetOfNodeIds = std::unordered_set<osmium::unsigned_object_id_type>;
+  
+  SetOfNodeIds& getSetOfNodesForS2Cell(uint64_t);
+
+  std::unordered_map<uint64_t, SetOfNodeIds> mWrittenNodesOfCellId;
+
+  int mS2Level;
 
 };

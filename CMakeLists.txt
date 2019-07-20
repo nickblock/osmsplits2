@@ -122,4 +122,6 @@ add_executable(osms2split
 
 target_include_directories(osms2split PUBLIC protozero/include)
 target_include_directories(osms2split PUBLIC libosmium/include)
-target_link_libraries(osms2split PUBLIC bz2 z expat pthread)
+target_include_directories(osms2split PUBLIC s2geometry/src)
+
+target_link_libraries(osms2split PUBLIC s2 ssl crypto bz2 z expat pthread)
