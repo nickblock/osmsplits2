@@ -1,9 +1,6 @@
 [submodule "s2geometry"]
 	path = s2geometry
 	url = git@github.com:google/s2geometry.git
-[submodule "googletest"]
-	path = googletest
-	url = git@github.com:google/googletest.git
 [submodule "libosmium"]
 	path = libosmium
 	url = git@github.com:osmcode/libosmium.git
