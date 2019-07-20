@@ -10,7 +10,6 @@ S2Splitter::S2Splitter(int s2level)
 
 }
 
-
 S2Splitter::SetOfNodeIds& S2Splitter::getSetOfNodesForS2Cell(uint64_t cellId)
 {
   const auto& iter = mWrittenNodesOfCellId.find(cellId);
@@ -43,11 +42,11 @@ void S2Splitter::way(osmium::Way& way)
   //for each s2cell covered add any nodes not yet added to it and then the way to it's file
   for(auto cellId : cellsCovered) {
 
-    SetOfNodeIds nodeIdSet = getSetOfNodesForS2Cell(cellId);
+    SetOfNodeIds& nodeIdSet = getSetOfNodesForS2Cell(cellId);
 
     for(auto& node : nodeList) {
       if(nodeIdSet.find(node.ref()) == nodeIdSet.end()) {
-
+        
       }
     }
   }
