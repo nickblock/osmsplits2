@@ -16,6 +16,11 @@ S2Splitter::S2Splitter(int s2Level)
 
 }
 
+S2Splitter::~S2Splitter() 
+{
+
+}
+
 void S2Splitter::setOutputDirectory(const std::string& dir)
 {
   mOutputDirectory = dir;
@@ -25,33 +30,40 @@ void S2Splitter::setOutputXml(bool xml)
 {
   mOutXml = xml;
 }
-
-S2Splitter::SetOfNodeIds& S2Splitter::getSetOfNodesForS2Cell(uint64_t cellId)
+void S2Splitter::flush() 
 {
-  const auto& iter = mWrittenNodesOfCellId.find(cellId);
+  for(auto& iter : mS2CellDetails) {
+
+    osmium::io::Header header;
+    header.set("generator", "osms2splitter");
+    header.add_box(iter.second.mBox);
+
+    auto writer = getWriterForS2Cell(iter.first, header);
+    (*writer)(std::move(iter.second.mBuffer));
+  }
+}
+
+S2Splitter::S2CellDetails& S2Splitter::getS2CellDetails(uint64_t cellId)
+{
+  const auto& iter = mS2CellDetails.find(cellId);
   
-  if(iter != mWrittenNodesOfCellId.end()) {
+  if(iter != mS2CellDetails.end()) {
     return iter->second;      
   }
   else {
-    mWrittenNodesOfCellId[cellId] = SetOfNodeIds();
-    return mWrittenNodesOfCellId[cellId];
+    mS2CellDetails[cellId] = {
+      SetOfNodeIds(),
+      osmium::memory::Buffer{16, osmium::memory::Buffer::auto_grow::yes},
+      osmium::Box()
+    };
+    return mS2CellDetails[cellId];
   }
 }
 
-std::shared_ptr<osmium::io::Writer> S2Splitter::getWriterForS2Cell(uint64_t cellId)
+std::unique_ptr<osmium::io::Writer> S2Splitter::getWriterForS2Cell(uint64_t cellId, osmium::io::Header& header)
 {
-  const auto& iter = mWritersForS2Cell.find(cellId);
-
-  if(iter != mWritersForS2Cell.end()) {
-    return iter->second;
-  }
-  else {
-    mWritersForS2Cell[cellId] = std::make_shared<osmium::io::Writer>(osmium::io::File(fileNameOfS2Cell(cellId)), osmium::io::overwrite::allow);
-    return mWritersForS2Cell[cellId];
-  }
+  return std::make_unique<osmium::io::Writer>(fileNameOfS2Cell(cellId), header, osmium::io::overwrite::allow);
 }
-
 
 std::string S2Splitter::fileNameOfS2Cell(uint64_t cellId)
 {
@@ -88,29 +100,27 @@ void S2Splitter::way(osmium::Way& way)
   //for each s2cell covered by the way, add any nodes not yet added to it's file and then the way as well
   for(auto cellId : cellsCovered) {
 
-    auto writer = getWriterForS2Cell(cellId);
-
-    SetOfNodeIds& nodeIdSet = getSetOfNodesForS2Cell(cellId);
-
-    osmium::memory::Buffer nodeBuffer{16, osmium::memory::Buffer::auto_grow::yes};
+    S2CellDetails& s2CellDetails = getS2CellDetails(cellId);
 
     for(auto& node : nodeList) {
-      if(nodeIdSet.find(node.ref()) == nodeIdSet.end()) { // if the node is not already in the set we want to write it to the s2's file
+      if(s2CellDetails.mWrittenNodes.find(node.ref()) == s2CellDetails.mWrittenNodes.end()) { // if the node is not already in the set we want to write it to the s2's file
 
-        osmium::builder::add_node(nodeBuffer,
+        osmium::builder::add_node(s2CellDetails.mBuffer,
           osmium::builder::attr::_id(node.ref()),
           osmium::builder::attr::_location(node.location())
         );
+        
+        s2CellDetails.mBox.extend(node.location());
+
+        s2CellDetails.mWrittenNodes.insert(node.ref());
       }
     }
 
-    osmium::builder::add_way(nodeBuffer,
+    osmium::builder::add_way(s2CellDetails.mBuffer,
       osmium::builder::attr::_id(way.id()),
       osmium::builder::attr::_tags(way.tags()),
       osmium::builder::attr::_nodes(way.nodes())
     );
-
-    (*writer)(std::move(nodeBuffer));
   }
 }
 
