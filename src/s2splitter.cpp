@@ -17,6 +17,16 @@ S2Splitter::S2Splitter(int s2Level)
 
 }
 
+void S2Splitter::setOutputDirectory(const std::string& dir)
+{
+  mOutputDirectory = dir;
+}
+
+void S2Splitter::setOutputXml(bool xml)
+{
+  mOutXml = xml;
+}
+
 S2Splitter::SetOfNodeIds& S2Splitter::getSetOfNodesForS2Cell(uint64_t cellId)
 {
   const auto& iter = mWrittenNodesOfCellId.find(cellId);
@@ -42,13 +52,8 @@ std::string S2Splitter::fileNameOfS2Cell(uint64_t cellId)
     }
   }
 
-  ss << "s2_" << cellId << ".osm.pbf";
+  ss << "s2_" << cellId << (mOutXml ? ".osm" : ".osm.pbf");
   return ss.str();
-}
-
-void S2Splitter::setOutputDirectory(const std::string& dir)
-{
-  mOutputDirectory = dir;
 }
 void S2Splitter::way(osmium::Way& way)
 {
@@ -58,6 +63,7 @@ void S2Splitter::way(osmium::Way& way)
 
   //create a list of s2cells which the nodes in this way occupy
   for(auto& node : nodeList) {
+
     cellsCovered.insert(
       S2Cell(S2LatLng::FromDegrees( // s2cell based on lat lon coords of node
         node.location().lat(), //node's lat lon coords
@@ -85,6 +91,14 @@ void S2Splitter::way(osmium::Way& way)
         );
       }
     }
+
+    osmium::builder::add_way(nodeBuffer,
+      osmium::builder::attr::_id(way.id()),
+      osmium::builder::attr::_tags(way.tags()),
+      osmium::builder::attr::_nodes(way.nodes())
+    );
+
+    (*writer)(std::move(nodeBuffer));
   }
 }
 

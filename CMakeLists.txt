@@ -120,6 +120,7 @@ add_executable(osms2split
   src/main.cpp
   src/s2splitter.cpp)
 
+target_compile_options(osms2split PRIVATE -Wno-attributes)
 target_include_directories(osms2split PUBLIC protozero/include)
 target_include_directories(osms2split PUBLIC libosmium/include)
 target_include_directories(osms2split PUBLIC s2geometry/src)

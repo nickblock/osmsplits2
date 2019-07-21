@@ -56,6 +56,7 @@ int main(int argi, char* argv[]) {
   args::ValueFlag<string>  inputFileArg(parser, "*.osm|*.pbf", "Specify input .osm file", {'i'});
   args::ValueFlag<string>  outputDirArg(parser, "/", "Specify output directory", {'o'});
   args::ValueFlag<int>     s2LevelArg(parser, "1", "Specify number of splits wanted", {'l'});
+  args::Flag               outputXmlArg(parser, "x", "Output xml (.osm), default is pbf", {'x'});
 
   try
   {
@@ -86,6 +87,9 @@ int main(int argi, char* argv[]) {
 
       if(args::get(outputDirArg).size() > 0) {
         s2Splitter.setOutputDirectory(args::get(outputDirArg));
+      }
+      if(args::get(outputXmlArg)) {
+        s2Splitter.setOutputXml(true);
       }
 
       osmium::io::Reader reader{args::get(inputFileArg), osmium::osm_entity_bits::node | osmium::osm_entity_bits::way};

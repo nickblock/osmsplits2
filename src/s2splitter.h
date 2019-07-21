@@ -17,6 +17,7 @@ public:
   S2Splitter(int s2level);
 
   void setOutputDirectory(const std::string&);
+  void setOutputXml(bool xml);
 
   void way(osmium::Way& way);
 
@@ -29,7 +30,8 @@ private:
 
   std::unordered_map<uint64_t, SetOfNodeIds> mWrittenNodesOfCellId;
 
-  int mS2Level;
+  int mS2Level = 10;
   std::string mOutputDirectory;
+  bool mOutXml = false;
 
 };
