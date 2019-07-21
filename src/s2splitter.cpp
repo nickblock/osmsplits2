@@ -3,7 +3,6 @@
 #include "s2/s2cell.h"
 #include "s2/s2latlng.h"
 #include "s2/s2cell_id.h"
-#include <osmium/io/writer.hpp>
 #include <osmium/io/input_iterator.hpp>
 #include <osmium/io/any_output.hpp>
 #include <osmium/builder/osm_object_builder.hpp>
@@ -40,6 +39,19 @@ S2Splitter::SetOfNodeIds& S2Splitter::getSetOfNodesForS2Cell(uint64_t cellId)
   }
 }
 
+std::shared_ptr<osmium::io::Writer> S2Splitter::getWriterForS2Cell(uint64_t cellId)
+{
+  const auto& iter = mWritersForS2Cell.find(cellId);
+
+  if(iter != mWritersForS2Cell.end()) {
+    return iter->second;
+  }
+  else {
+    mWritersForS2Cell[cellId] = std::make_shared<osmium::io::Writer>(osmium::io::File(fileNameOfS2Cell(cellId)), osmium::io::overwrite::allow);
+    return mWritersForS2Cell[cellId];
+  }
+}
+
 
 std::string S2Splitter::fileNameOfS2Cell(uint64_t cellId)
 {
@@ -52,7 +64,7 @@ std::string S2Splitter::fileNameOfS2Cell(uint64_t cellId)
     }
   }
 
-  ss << "s2_" << cellId << (mOutXml ? ".osm" : ".osm.pbf");
+  ss << "s2_" << std::hex << cellId << (mOutXml ? ".osm" : ".osm.pbf");
   return ss.str();
 }
 void S2Splitter::way(osmium::Way& way)
@@ -76,7 +88,7 @@ void S2Splitter::way(osmium::Way& way)
   //for each s2cell covered by the way, add any nodes not yet added to it's file and then the way as well
   for(auto cellId : cellsCovered) {
 
-    auto writer = std::make_shared<osmium::io::Writer>(osmium::io::File(fileNameOfS2Cell(cellId)), osmium::io::overwrite::allow);
+    auto writer = getWriterForS2Cell(cellId);
 
     SetOfNodeIds& nodeIdSet = getSetOfNodesForS2Cell(cellId);
 
